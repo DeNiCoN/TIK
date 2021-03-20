@@ -1,6 +1,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <filesystem>
+#include "huffman_code.hpp"
 
 
 int main(int argc, char** argv)
@@ -31,12 +32,14 @@ int main(int argc, char** argv)
     }
     po::notify(vm);
 
-    fs::path inputFile(vm.as<std::string>("fname"));
-    if (!inputFile.exists())
+    fs::path inputFile(vm["fname"].as<std::string>());
+    if (!fs::exists(inputFile))
     {
-        std::cerr << "File " << inputFile.str() << " do not exists\n";
+        std::cerr << "File " << inputFile.string() << " do not exists\n";
         return 1;
     }
+
+    huffman_code::encode(inputFile, fs::path(inputFile).concat(".hc"));
 
     return 0;
 }
