@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <cstdint>
 
-namespace huffman_code
+namespace tik
 {
     template<typename Char, typename Integer>
     class Header

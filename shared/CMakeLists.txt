@@ -9,4 +9,4 @@ add_library(shared
   )
 
 target_include_directories(shared PUBLIC ".")
-add_library(huffman_code::shared ALIAS shared)
+add_library(tik::shared ALIAS shared)

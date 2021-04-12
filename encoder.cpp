@@ -1,7 +1,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <filesystem>
-#include "huffman_code.hpp"
+#include "tik.hpp"
 
 
 int main(int argc, char** argv)
@@ -11,7 +11,8 @@ int main(int argc, char** argv)
     po::options_description visible;
 
     visible.add_options()
-        ("help", "Produce help message");
+        ("help", "Produce help message")
+        ("shannon-fano", po::bool_switch(), "Encode using Shannon-Fano Algorithm");
 
     po::options_description hidden;
     hidden.add_options()
@@ -39,7 +40,14 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    huffman_code::encode(inputFile, fs::path(inputFile).concat(".hc"));
+    if (vm.count("shannon-fano"))
+    {
+        tik::encode_shannon_fano(inputFile, fs::path(inputFile).concat(".encoded"));
+    }
+    else
+    {
+        tik::encode_shannon_fano(inputFile, fs::path(inputFile).concat(".encoded"));
+    }
 
     return 0;
 }
