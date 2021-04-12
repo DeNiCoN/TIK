@@ -140,13 +140,17 @@ namespace tik
 
         while (nodes.size() >= 2)
         {
-            auto lhs = std::ranges::pop_heap(nodes, cmp);
-            auto rhs = std::ranges::pop_heap(nodes, cmp);
+            auto lhs = std::prev(std::ranges::pop_heap(nodes, cmp));
+            auto rhs = std::prev(std::ranges::pop_heap(nodes.begin(), lhs, cmp));
 
             auto node = std::make_unique<Node>(
                 Node{std::move(lhs->second), std::move(rhs->second), {0, 0}, '\0'});
 
-            nodes.push_back(std::make_pair(lhs->first + rhs->first, std::move(node)));
+            auto new_pair = std::make_pair(lhs->first + rhs->first, std::move(node));
+
+            nodes.pop_back();
+            nodes.pop_back();
+            nodes.push_back(std::move(new_pair));
 
             std::ranges::push_heap(nodes, cmp);
         }

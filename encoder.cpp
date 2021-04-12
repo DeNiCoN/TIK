@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 
     visible.add_options()
         ("help", "Produce help message")
-        ("shannon-fano", po::bool_switch(), "Encode using Shannon-Fano Algorithm")
+        ("shannon-fano", "Encode using Shannon-Fano Algorithm")
         ("suffix", po::value<std::string>()->default_value(".encoded"));
 
     po::options_description hidden;
