@@ -110,6 +110,70 @@ namespace tik
         return CodeTree(std::move(root));
     }
 
+    CodeTree CodeTree::build_huffman(std::istream& in)
+    {
+        std::map<char, unsigned> counts;
+
+        unsigned sum = 0;
+        char c;
+        while (in.get(c))
+        {
+            ++counts[c];
+            ++sum;
+        }
+
+        std::vector<std::pair<unsigned, std::unique_ptr<Node>>> nodes;
+        nodes.reserve(counts.size());
+
+        for (const auto& [c, n] : counts)
+        {
+            auto node = std::make_unique<Node>(Node{nullptr, nullptr, {0, 0}, c});
+            nodes.push_back(std::make_pair(n, std::move(node)));
+        }
+
+        auto cmp = [](const auto& lhs, const auto& rhs)
+        {
+            return lhs.first > rhs.first;
+        };
+
+        std::ranges::make_heap(nodes, cmp);
+
+        while (nodes.size() >= 2)
+        {
+            auto lhs = std::ranges::pop_heap(nodes, cmp);
+            auto rhs = std::ranges::pop_heap(nodes, cmp);
+
+            auto node = std::make_unique<Node>(
+                Node{std::move(lhs->second), std::move(rhs->second), {0, 0}, '\0'});
+
+            nodes.push_back(std::make_pair(lhs->first + rhs->first, std::move(node)));
+
+            std::ranges::push_heap(nodes, cmp);
+        }
+
+        auto update = [] (const auto* parent, const auto& self_ref) -> void
+        {
+            if (parent->left)
+            {
+                const Code left_code = { parent->code.value, parent->code.length + 1 };
+                parent->left->code = left_code;
+                self_ref(parent->left.get(), self_ref);
+            }
+
+            if (parent->right)
+            {
+                const Code right_code = {parent->code.value | (1 << (parent->code.length)),
+                    parent->code.length + 1};
+                parent->right->code = right_code;
+                self_ref(parent->right.get(), self_ref);
+            }
+        };
+
+        update(nodes.front().second.get(), update);
+        return CodeTree(std::move(nodes.front().second));
+
+    }
+
     CodeTree::CodeTree(std::unique_ptr<Node> root)
         : m_root(std::move(root))
     {

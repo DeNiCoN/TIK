@@ -12,7 +12,8 @@ int main(int argc, char** argv)
 
     visible.add_options()
         ("help", "Produce help message")
-        ("shannon-fano", po::bool_switch(), "Encode using Shannon-Fano Algorithm");
+        ("shannon-fano", po::bool_switch(), "Encode using Shannon-Fano Algorithm")
+        ("suffix", po::value<std::string>()->default_value(".encoded"));
 
     po::options_description hidden;
     hidden.add_options()
@@ -34,19 +35,22 @@ int main(int argc, char** argv)
     po::notify(vm);
 
     fs::path inputFile(vm["fname"].as<std::string>());
+
     if (!fs::exists(inputFile))
     {
         std::cerr << "File " << inputFile.string() << " do not exists\n";
         return 1;
     }
 
+    std::string suffix = vm["suffix"].as<std::string>();
+
     if (vm.count("shannon-fano"))
     {
-        tik::encode_shannon_fano(inputFile, fs::path(inputFile).concat(".encoded"));
+        tik::encode_shannon_fano(inputFile, fs::path(inputFile).concat(suffix));
     }
     else
     {
-        tik::encode_shannon_fano(inputFile, fs::path(inputFile).concat(".encoded"));
+        tik::encode_huffman(inputFile, fs::path(inputFile).concat(suffix));
     }
 
     return 0;
