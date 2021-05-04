@@ -71,12 +71,24 @@ namespace tik
                 }
             }
 
+            bool discard_last() const
+            {
+                return m_discard_last;
+            }
+
+            bool& discard_last()
+            {
+                return m_discard_last;
+            }
+
             ~BitWriter()
             {
-                m_out.put(m_current);
+                if (m_length && !m_discard_last)
+                    m_out.put(m_current);
             }
 
         private:
+            bool m_discard_last = false;
             unsigned m_length = 0;
             std::ostream& m_out;
             char m_current = 0;

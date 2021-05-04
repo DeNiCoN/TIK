@@ -81,7 +81,8 @@ int main(int argc, char** argv)
     {
         po::options_description encode_options("encode options");
         encode_options.add_options()
-            ("suffix", po::value<std::string>()->default_value(".hamming"));
+            ("suffix", po::value<std::string>()->default_value(".hamming"), "Output file suffix")
+            ("no-extended", "Use (15, 11) hamming");
         po::store(po::command_line_parser(opts).options(encode_options).run(), vm);
 
         if (vm.count("help"))
@@ -117,6 +118,7 @@ int main(int argc, char** argv)
         fs::path out_path(input_file);
         const std::string suffix = vm["suffix"].as<std::string>();
         tik::hamming::decode(input_file, out_path.concat(suffix));
+        break;
     }
     case ExecutionMode::FLIP:
     {
@@ -138,7 +140,7 @@ int main(int argc, char** argv)
 
         fs::path out_path = vm.count("out") ? fs::path(vm["out"].as<std::string>()) : input_file;
 
-        std::ifstream stream(input_file, std::ios::binary);
+        std::fstream stream(input_file, std::ios::binary);
         std::istreambuf_iterator<char> begin(stream);
         std::istreambuf_iterator<char> end;
         std::vector<char> buffer(begin, end);
@@ -147,6 +149,8 @@ int main(int argc, char** argv)
         {
             tik::utils::flip_bit(buffer.begin(), pos);
         }
+
+        stream.write(buffer.data(), buffer.size());
 
         break;
     }

@@ -22,7 +22,7 @@ namespace tik
                                  const std::filesystem::path& to)
         {
             std::ifstream input(from, std::ios::binary);
-            std::ofstream output(from, std::ios::binary);
+            std::ofstream output(to, std::ios::binary);
 
             output.put(char(Type::NORMAL));
 
@@ -33,8 +33,6 @@ namespace tik
                 std::bitset<4> code;
                 std::bitset<16> out;
 
-                bool current;
-                current = bit_getter.get();
                 for (unsigned i = 0; i < 11; ++i)
                 {
                     if (bit_getter.get())
@@ -62,38 +60,54 @@ namespace tik
                     const std::filesystem::path& to)
         {
             std::ifstream input(from, std::ios::binary);
-            std::ofstream output(from, std::ios::binary);
+            std::ofstream output(to, std::ios::binary);
 
             utils::BitWriter bit_writer(output);
+            bit_writer.discard_last() = true;
 
             unsigned char type_char = input.get();
             if (type_char > 2)
+            {
+                std::cerr << "Unknown type" << std::endl;
                 throw std::exception();
+            }
 
             Type type = static_cast<Type>(type_char);
 
-            while(output)
+            uint16_t current;
+            while(input.read(reinterpret_cast<char*>(&current), sizeof(current)))
             {
-                uint16_t current;
-                input.read(reinterpret_cast<char*>(&current), sizeof(current));
                 std::bitset<sizeof(current) * 8> current_set = current;
 
-                std::size_t result = 0;
+                std::size_t flip = 0;
                 for (std::size_t i = 0; i < current_set.size(); ++i)
                 {
-                    result ^= current_set[i];
+                    flip ^= current_set[i];
                 }
 
                 if (type == Type::NORMAL)
                 {
-                    current_set.flip(result);
+                    current_set.flip(flip);
                 }
                 else if(type == Type::EXTENDED)
                 {
                     //TODO extended
+                    current_set.flip(flip);
                 }
 
-                bit_writer.write(current_set);
+                std::bitset<11> result;
+                result[0] = current_set[3];
+                result[1] = current_set[5];
+                result[2] = current_set[6];
+                result[3] = current_set[7];
+                result[4] = current_set[9];
+                result[5] = current_set[10];
+                result[6] = current_set[11];
+                result[7] = current_set[12];
+                result[8] = current_set[13];
+                result[9] = current_set[14];
+                result[10] = current_set[15];
+                bit_writer.write(result);
             }
         }
     }
