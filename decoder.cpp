@@ -41,8 +41,7 @@ int main(int argc, char** argv)
 
     fs::path out_path(inputFile);
 
-    tik::decode(inputFile, out_path.extension() == ".hc" ?
-                         out_path.stem() : out_path.concat(".decoded"));
+    tik::decode(inputFile, out_path.concat(".decoded"));
 
     return 0;
 }

@@ -17,6 +17,11 @@ add_executable(decoder
   decoder.cpp
   )
 
+add_executable(hamming
+  hamming.cpp
+  )
+
 add_subdirectory(shared)
 target_link_libraries(encoder tik::shared Boost::program_options)
 target_link_libraries(decoder tik::shared Boost::program_options)
+target_link_libraries(hamming tik::shared Boost::program_options)

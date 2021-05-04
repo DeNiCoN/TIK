@@ -5,6 +5,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
+#include "bit_getter.hpp"
 
 namespace tik
 {
@@ -75,26 +76,13 @@ namespace tik
             char get();
             explicit operator bool() const { return m_num_chars; }
         private:
-            class BitGetter
-            {
-            public:
-                BitGetter(std::istream& in)
-                    : m_in(in), m_current(in.get())
-                {}
-                bool get();
-            private:
-                unsigned m_length = 0;
-                std::istream& m_in;
-                char m_current;
-
-            };
 
             void update();
 
             const CodeTree& m_tree;
             const CodeTree::Node* m_node;
             std::size_t m_num_chars;
-            BitGetter m_bit_getter;
+            utils::BitGetter m_bit_getter;
         };
 
         explicit CodeTree(std::unique_ptr<Node> root);

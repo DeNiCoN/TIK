@@ -257,7 +257,6 @@ namespace tik
 
                 value = value >> writed;
                 left -= writed;
-
             }
             else
             {
@@ -275,22 +274,11 @@ namespace tik
         m_out.put(m_current);
     }
 
-    bool CodeTree::Decoder::BitGetter::get()
-    {
-        if (m_length >= 8)
-        {
-            m_length = 0;
-            m_current = m_in.get();
-        }
-
-        return (m_current >> m_length++) & 1;
-    }
-
     //Invariant:
     //m_node - node with char that will be returned
     char CodeTree::Decoder::get()
     {
-        auto traverse = [](const Node* node, BitGetter& bit_getter, auto& self_ref)
+        auto traverse = [](const Node* node, utils::BitGetter& bit_getter, auto& self_ref)
             -> const Node*
         {
             if (!node)
