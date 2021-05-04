@@ -116,17 +116,11 @@ int main(int argc, char** argv)
 
         fs::path out_path(input_file);
         const std::string suffix = vm["suffix"].as<std::string>();
-        if (vm.count("no-extended"))
-            tik::hamming::decode_not_extended(input_file, out_path.extension() == ".encoded" ?
-                                              out_path.stem() : out_path.concat(suffix));
-        else
-            tik::hamming::decode(input_file, out_path.extension() == ".encoded" ?
-                                 out_path.stem() : out_path.concat(suffix));
-        break;
+        tik::hamming::decode(input_file, out_path.concat(suffix));
     }
     case ExecutionMode::FLIP:
     {
-        po::options_description flip_options("decode options");
+        po::options_description flip_options("flip options");
         std::vector<size_t> positions;
         flip_options.add_options()
             ("out", po::value<std::string>(), "Output file")

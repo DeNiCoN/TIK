@@ -4,6 +4,7 @@
 #include <map>
 #include <ranges>
 #include <algorithm>
+#include "bit_writer.hpp"
 
 namespace tik
 {
@@ -240,40 +241,6 @@ namespace tik
         }
     }
 
-    void CodeTree::Encoder::put(CodeTree::Code code)
-    {
-        unsigned left = code.length;
-        unsigned value = code.value;
-        while (left > 0)
-        {
-            if (left + m_length >= sizeof(char) * 8)
-            {
-                m_current |= (value << m_length);
-                unsigned writed = sizeof(char) * 8 - m_length;
-                m_out.put(m_current);
-
-                m_current = 0;
-                m_length = 0;
-
-                value = value >> writed;
-                left -= writed;
-            }
-            else
-            {
-                m_current |= (value << m_length);
-                m_length += left;
-
-                value = value >> left;
-                left = 0;
-            }
-        }
-    }
-
-    CodeTree::Encoder::~Encoder()
-    {
-        m_out.put(m_current);
-    }
-
     //Invariant:
     //m_node - node with char that will be returned
     char CodeTree::Decoder::get()
@@ -305,11 +272,12 @@ namespace tik
 
     void CodeTree::encode(std::istream& in, std::ostream& out)
     {
-        CodeTree::Encoder encoder(*this, out);
+        utils::BitWriter encoder(out);
         char c;
         while(in.get(c))
         {
-            encoder.put(map_char(c));
+            const auto code = map_char(c);
+            encoder.write(code.value, code.length);
         }
     }
 

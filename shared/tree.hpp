@@ -23,12 +23,12 @@ namespace tik
             unsigned value;
             unsigned length;
 
-            bool operator==(const Code& rhs)
+            bool operator==(const Code& rhs) const
             {
                 return (value == rhs.value) && (length == rhs.length);
             }
 
-            bool operator!=(const Code& rhs)
+            bool operator!=(const Code& rhs) const
             {
                 return !(*this == rhs);
             }
@@ -38,6 +38,17 @@ namespace tik
 
         void encode(std::istream& in, std::ostream& out);
         void decode(std::istream& in, std::ostream& out, std::uintmax_t num_chars);
+
+        bool operator==(const CodeTree& rhs) const
+        {
+            return this->m_char_code == rhs.m_char_code;
+        }
+
+        bool operator!=(const CodeTree& rhs) const
+        {
+            return !(*this == rhs);
+        }
+
     private:
         struct Node
         {
@@ -47,21 +58,6 @@ namespace tik
             char value;
 
             bool is_leaf() const { return !(left && right); }
-        };
-
-        class Encoder
-        {
-        public:
-            Encoder(const CodeTree& tree, std::ostream& out)
-                : m_tree(tree), m_out(out)
-            {}
-            ~Encoder();
-            void put(CodeTree::Code code);
-        private:
-            const CodeTree& m_tree;
-            std::ostream& m_out;
-            char m_current = 0;
-            unsigned m_length = 0;
         };
 
         class Decoder

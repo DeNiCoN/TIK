@@ -1,6 +1,4 @@
 #include "tik.hpp"
-#include "header.hpp"
-
 #include <fstream>
 
 namespace tik
