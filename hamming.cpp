@@ -123,13 +123,13 @@ int main(int argc, char** argv)
     case ExecutionMode::FLIP:
     {
         po::options_description flip_options("flip options");
-        std::vector<size_t> positions;
         flip_options.add_options()
             ("out", po::value<std::string>(), "Output file")
-            ("pos", po::value(&positions), "Positions to flip bit");
+            ("pos", po::value<std::vector<std::size_t>>(), "Positions to flip bit");
         po::positional_options_description positional;
         positional.add("pos", -1);
-        po::store(po::command_line_parser(opts).options(flip_options).run(), vm);
+        po::store(po::command_line_parser(opts).options(flip_options)
+                  .positional(positional).run(), vm);
 
         if (vm.count("help"))
         {
@@ -138,24 +138,29 @@ int main(int argc, char** argv)
         }
         vm.notify();
 
+        auto positions = vm["pos"].as<std::vector<std::size_t>>();
+
         fs::path out_path = vm.count("out") ? fs::path(vm["out"].as<std::string>()) : input_file;
 
-        std::fstream stream(input_file, std::ios::binary);
+        std::ifstream stream(input_file, std::ios::binary);
         std::istreambuf_iterator<char> begin(stream);
         std::istreambuf_iterator<char> end;
         std::vector<char> buffer(begin, end);
+        stream.close();
 
         for (const std::size_t pos : positions)
         {
             tik::utils::flip_bit(buffer.begin(), pos);
         }
 
-        stream.write(buffer.data(), buffer.size());
+        std::ofstream out_stream(out_path, std::ios::binary);
+        out_stream.write(buffer.data(), buffer.size());
 
         break;
     }
     case ExecutionMode::CHECK:
     {
+        tik::hamming::check(input_file, std::cout);
         break;
     }
     }

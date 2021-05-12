@@ -13,5 +13,8 @@ namespace tik
 
         void decode(const std::filesystem::path& from,
                     const std::filesystem::path& to);
+
+        void check(const std::filesystem::path& input_file,
+                   std::ostream& log_stream);
     }
 }
