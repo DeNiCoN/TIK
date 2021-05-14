@@ -1,20 +1,16 @@
-#include <boost/program_options.hpp>
 #include <iostream>
-#include <vector>
-#include <fstream>
+#include <boost/program_options.hpp>
 #include <filesystem>
-#include <iterator>
-#include "tik.hpp"
-#include "utils.hpp"
-#include "hamming.hpp"
+#include "crc.hpp"
 
 enum class ExecutionMode
 {
     ENCODE,
     DECODE,
-    FLIP,
     CHECK
 };
+
+
 
 std::istream& operator>>(std::istream& in, ExecutionMode& mode)
 {
@@ -24,8 +20,6 @@ std::istream& operator>>(std::istream& in, ExecutionMode& mode)
         mode = ExecutionMode::ENCODE;
     else if (str == "decode")
         mode = ExecutionMode::DECODE;
-    else if (str == "flip")
-        mode = ExecutionMode::FLIP;
     else if (str == "check")
         mode = ExecutionMode::CHECK;
     else
@@ -81,8 +75,7 @@ int main(int argc, char** argv)
     {
         po::options_description encode_options("encode options");
         encode_options.add_options()
-            ("suffix", po::value<std::string>()->default_value(".hamming"), "Output file suffix")
-            ("no-extended", "Use (15, 11) hamming");
+            ("suffix", po::value<std::string>()->default_value(".crc"), "Output file suffix");
         po::store(po::command_line_parser(opts).options(encode_options).run(), vm);
 
         if (vm.count("help"))
@@ -94,11 +87,8 @@ int main(int argc, char** argv)
 
         fs::path out_path(input_file);
         const std::string suffix = vm["suffix"].as<std::string>();
-        if (vm.count("no-extended"))
-            tik::hamming::encode_not_extended(input_file, out_path.concat(suffix));
-        else
-            tik::hamming::encode(input_file, out_path.concat(suffix));
 
+        tik::crc::encode(input_file, out_path.concat(suffix), tik::crc::CRC_16_ANSI);
         break;
     }
     case ExecutionMode::DECODE:
@@ -117,50 +107,12 @@ int main(int argc, char** argv)
 
         fs::path out_path(input_file);
         const std::string suffix = vm["suffix"].as<std::string>();
-        tik::hamming::decode(input_file, out_path.concat(suffix));
-        break;
-    }
-    case ExecutionMode::FLIP:
-    {
-        po::options_description flip_options("flip options");
-        flip_options.add_options()
-            ("out", po::value<std::string>(), "Output file")
-            ("pos", po::value<std::vector<std::size_t>>(), "Positions to flip bit");
-        po::positional_options_description positional;
-        positional.add("pos", -1);
-        po::store(po::command_line_parser(opts).options(flip_options)
-                  .positional(positional).run(), vm);
-
-        if (vm.count("help"))
-        {
-            std::cout << flip_options << "\n";
-            return 1;
-        }
-        vm.notify();
-
-        auto positions = vm["pos"].as<std::vector<std::size_t>>();
-
-        fs::path out_path = vm.count("out") ? fs::path(vm["out"].as<std::string>()) : input_file;
-
-        std::ifstream stream(input_file, std::ios::binary);
-        std::istreambuf_iterator<char> begin(stream);
-        std::istreambuf_iterator<char> end;
-        std::vector<char> buffer(begin, end);
-        stream.close();
-
-        for (const std::size_t pos : positions)
-        {
-            tik::utils::flip_bit(buffer.begin(), pos);
-        }
-
-        std::ofstream out_stream(out_path, std::ios::binary);
-        out_stream.write(buffer.data(), buffer.size());
 
         break;
     }
     case ExecutionMode::CHECK:
     {
-        tik::hamming::check(input_file, std::cout);
+        tik::crc::check(input_file, std::cout);
         break;
     }
     }
