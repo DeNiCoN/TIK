@@ -3,14 +3,14 @@
 #include <filesystem>
 #include "crc.hpp"
 
+constexpr auto POLY = tik::crc::CRC_16_ANSI;
+
 enum class ExecutionMode
 {
     ENCODE,
     DECODE,
     CHECK
 };
-
-
 
 std::istream& operator>>(std::istream& in, ExecutionMode& mode)
 {
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
         fs::path out_path(input_file);
         const std::string suffix = vm["suffix"].as<std::string>();
 
-        tik::crc::encode(input_file, out_path.concat(suffix), tik::crc::CRC_16_ANSI);
+        tik::crc::encode<POLY>(input_file, out_path.concat(suffix));
         break;
     }
     case ExecutionMode::DECODE:
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
     }
     case ExecutionMode::CHECK:
     {
-        tik::crc::check(input_file, std::cout);
+        tik::crc::check<POLY>(input_file, std::cout);
         break;
     }
     }

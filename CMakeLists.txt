@@ -22,7 +22,7 @@ add_executable(hamming
   )
 
 add_executable(crc
-  hamming.cpp
+  crc.cpp
   )
 
 add_subdirectory(shared)

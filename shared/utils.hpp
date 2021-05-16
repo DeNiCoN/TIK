@@ -17,5 +17,16 @@ namespace tik
             const auto char_it = std::next(begin, jump);
             *char_it = std::bitset<unit>(*char_it).flip(remain).to_ulong();
         }
+
+        template<std::size_t N>
+        constexpr std::uintmax_t to_uintmax(const std::bitset<N>& bitset)
+        {
+            std::uintmax_t result = 0;
+            for (unsigned i = 0; i < N; i++)
+            {
+                result |= 0x1 << bitset[i];
+            }
+            return result;
+        }
     }
 }
