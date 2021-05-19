@@ -32,7 +32,7 @@ namespace tik
                 {
                     if (head & (1 << j))
                     {
-                        head ^= poly_uint >> (N - j + 1);
+                        head ^= poly_uint >> (N - j - 1);
                         entry ^= poly_uint << (j + 1);
                     }
                 }
@@ -51,11 +51,11 @@ namespace tik
 
             for (std::size_t i = 0; i < span.size(); i++)
             {
-                char cur = (result >> (N - 8)).to_ulong() & 0xFF;
+                auto next = (result >> (N - 8));
+                unsigned char cur = next.to_ulong() & 0xFF;
                 result <<= 8;
-                result ^= table[cur ^ span[i]];
+                result ^= table[cur ^ static_cast<unsigned char>(span[i])];
             }
-
             return result;
         }
 
@@ -70,21 +70,23 @@ namespace tik
 
             std::array<char, BLOCK_SIZE - Bytes> block;
 
-            while(input.read(block.data(), block.size() - Bytes))
+            auto encode_and_write = [&](auto span)
             {
-                std::cout << input.gcount() << std::endl;
-                auto crc = encode_span<poly>(std::span(block)).to_ulong();
-                output.write(block.data(), block.size());
+                auto crc = encode_span<poly>(span).to_ulong();
+                crc <<= (sizeof(crc) - Bytes)*8;
+                crc = utils::swap_endian(crc);
+                output.write(span.data(), span.size());
                 output.write(reinterpret_cast<const char*>(&crc), Bytes);
+            };
+
+            while(input.read(block.data(), block.size()))
+            {
+                encode_and_write(std::span(block));
             }
-            std::cout << input.gcount() << " out" << std::endl;
             //Last block
             if (input.gcount())
             {
-                std::span last(block.data(), input.gcount());
-                auto crc = encode_span<poly>(last).to_ulong();
-                output.write(last.data(), last.size());
-                output.write(reinterpret_cast<const char*>(&crc), Bytes);
+                encode_and_write(std::span(block.data(), input.gcount()));
             }
         }
 
@@ -96,18 +98,62 @@ namespace tik
             std::ifstream input(from, std::ios::binary);
             std::array<char, BLOCK_SIZE> block;
 
-            while(input.read(block.data(), block.size() - Bytes))
+            auto get_crc_from_memory = [](auto span)
             {
-                auto crc = encode_span<poly>(std::span(block));
-                log_stream << crc << std::endl;
+                unsigned long result = 0;
+                for (std::size_t i = span.size(); i != 0; i--)
+                {
+                    result |= (static_cast<unsigned char>(span[i]) << (i * 8));
+                }
+                return result;
+            };
+
+            auto check_and_log = [&](auto span, std::size_t i)
+            {
+                auto initial_crc =
+                    get_crc_from_memory(span.subspan(span.size() - Bytes));
+                auto crc = encode_span<poly>(span).to_ulong();
+
+                log_stream << "Checking block " << i << ", crc: "
+                           << initial_crc << std::endl;
+                if (crc != 0)
+                {
+                    log_stream << "failed: " << crc << "\n\n";
+                }
+                else
+                {
+                    log_stream << "successful: " << crc << "\n\n";
+                }
+            };
+
+            std::size_t i = 0;
+            while(input.read(block.data(), block.size()))
+            {
+                check_and_log(std::span(block), i);
+                i++;
             }
 
             if (input.gcount())
             {
-                std::span last(block.data(), input.gcount());
-                auto crc = encode_span<poly>(last).to_ulong();
-                log_stream << crc << std::endl;
+                check_and_log(std::span(block.data(), input.gcount()), i);
             }
+        }
+
+        template <const auto& poly>
+        void decode(const std::filesystem::path& from,
+                    const std::filesystem::path& to)
+        {
+            constexpr auto N = poly.size();
+            constexpr auto Bytes = N/8;
+            std::ifstream input(from, std::ios::binary);
+            std::ofstream output(to, std::ios::binary);
+            std::array<char, BLOCK_SIZE> block;
+
+            while(input.read(block.data(), block.size()))
+            {
+                output.write(block.data(), block.size() - Bytes);
+            }
+            output.write(block.data(), input.gcount() - Bytes);
         }
     }
 }

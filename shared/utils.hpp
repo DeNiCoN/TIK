@@ -1,7 +1,9 @@
 #pragma once
 #include <cstddef>
 #include <iterator>
+#include <iostream>
 #include <bitset>
+#include <climits>
 
 namespace tik
 {
@@ -24,9 +26,28 @@ namespace tik
             std::uintmax_t result = 0;
             for (unsigned i = 0; i < N; i++)
             {
-                result |= 0x1 << bitset[i];
+                result |= bitset[i] << i;
             }
             return result;
+        }
+
+        template <typename T>
+        T swap_endian(T u)
+        {
+            static_assert (CHAR_BIT == 8, "CHAR_BIT != 8");
+
+            union
+            {
+                T u;
+                unsigned char u8[sizeof(T)];
+            } source, dest;
+
+            source.u = u;
+
+            for (size_t k = 0; k < sizeof(T); k++)
+                dest.u8[k] = source.u8[sizeof(T) - k - 1];
+
+            return dest.u;
         }
     }
 }

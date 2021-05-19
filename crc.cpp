@@ -3,7 +3,7 @@
 #include <filesystem>
 #include "crc.hpp"
 
-constexpr auto POLY = tik::crc::CRC_16_ANSI;
+constexpr auto POLY = tik::crc::CRC_32;
 
 enum class ExecutionMode
 {
