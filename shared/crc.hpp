@@ -6,12 +6,13 @@
 #include <fstream>
 #include <iostream>
 #include <span>
+#include <algorithm>
 
 namespace tik
 {
     namespace crc
     {
-        constexpr std::size_t BLOCK_SIZE = 4 * 1024;
+        constexpr std::size_t BLOCK_SIZE = 1024;
         constexpr std::bitset<16> CRC_16_ANSI(0b1100000000000101);
         constexpr std::bitset<32> CRC_32(0b100000100110000010001110110110111);
         constexpr std::bitset<32> CRC_32C(0b101110100000110111000110011010111);
@@ -39,6 +40,25 @@ namespace tik
                 result[i] = std::bitset<N>(entry);
             }
             return result;
+        }
+
+        template <const auto& poly, std::size_t Size>
+        constexpr auto encode_span_constexpr(std::span<char, Size> span)
+        {
+            constexpr auto table = build_table(poly);
+            constexpr auto N = poly.size();
+            constexpr auto Bytes = N/8;
+            std::uintmax_t result_impl = 0;
+
+            auto mask = utils::get_consecutive_bits(N);
+            for (std::size_t i = 0; i < span.size(); i++)
+            {
+                auto next = (result_impl >> (N - 8)) & mask;
+                unsigned char cur = next & 0xFF;
+                result_impl = (result_impl << 8) & mask;
+                result_impl ^= utils::to_uintmax(table[cur ^ static_cast<unsigned char>(span[i])]) & mask;
+            }
+            return result_impl;
         }
 
         template <const auto& poly, std::size_t Size>
@@ -91,10 +111,30 @@ namespace tik
         }
 
         template <const auto& poly>
+        constexpr auto build_crc_bit_error_array()
+        {
+            constexpr auto Bytes = poly.size()/8;
+            std::array<std::pair<unsigned long, std::size_t>, BLOCK_SIZE * 8> result;
+            std::array<char, BLOCK_SIZE> buffer{};
+            for (std::size_t i = 0; i < BLOCK_SIZE * 8; i++)
+            {
+                utils::flip_bit(buffer.begin(), i);
+                result[i] = std::pair(
+                    encode_span_constexpr<poly>(std::span(buffer)), i);
+                utils::flip_bit(buffer.begin(), i);
+            }
+            std::ranges::sort(result, std::ranges::less{},
+                              [](const auto& p) { return p.first; });
+            std::cout << "Done building table\n";
+            return result;
+        }
+
+        template <const auto& poly>
         void check(const std::filesystem::path& from, std::ostream& log_stream)
         {
             constexpr auto N = poly.size();
             constexpr auto Bytes = N/8;
+            const auto bit_table = build_crc_bit_error_array<poly>();
             std::ifstream input(from, std::ios::binary);
             std::array<char, BLOCK_SIZE> block;
 
@@ -103,7 +143,7 @@ namespace tik
                 unsigned long result = 0;
                 for (std::size_t i = span.size(); i != 0; i--)
                 {
-                    result |= (static_cast<unsigned char>(span[i]) << (i * 8));
+                    result |= (static_cast<unsigned char>(span[i - 1]) << ((i - 1) * 8));
                 }
                 return result;
             };
@@ -111,13 +151,20 @@ namespace tik
             auto check_and_log = [&](auto span, std::size_t i)
             {
                 auto initial_crc =
-                    get_crc_from_memory(span.subspan(span.size() - Bytes));
+                    get_crc_from_memory(span.last(Bytes));
                 auto crc = encode_span<poly>(span).to_ulong();
 
                 log_stream << "Checking block " << i << ", crc: "
                            << initial_crc << std::endl;
                 if (crc != 0)
                 {
+                    auto range = std::ranges::equal_range(bit_table, crc, std::ranges::less {},
+                                                          [](const auto& pair) { return pair.first; });
+                    if (range.begin() != range.end())
+                    {
+                        log_stream << "possible 1 bit error at block bit "
+                                   << range.begin()->second << std::endl;
+                    }
                     log_stream << "failed: " << crc << "\n\n";
                 }
                 else
